@@ -1,24 +1,28 @@
 (function() {
-  var Carcase, Controller, Model, Module, Tool, View,
+  var Carcase, Controller, Model, Module, Tool, View, carcase,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   Tool = (function() {
     function Tool() {}
 
-    Tool.prototype._finder = function(selector) {
-      var child, childs, _i, _len, _results;
+    Tool.prototype._attrs = function(selector) {
+      var child, childs, results, _i, _j, _len, _len1, _ref;
       childs = selector.children;
-      _results = [];
+      results = [];
       for (_i = 0, _len = childs.length; _i < _len; _i++) {
         child = childs[_i];
-        if (child.classList.contains("module")) {
-          _results.push(child);
+        if (child.attributes.module) {
+          results.push(child);
         } else {
-          _results.push(void 0);
+          _ref = this._attrs(child);
+          for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+            child = _ref[_j];
+            results.push(child);
+          }
         }
       }
-      return _results;
+      return results;
     };
 
     return Tool;
@@ -26,35 +30,66 @@
   })();
 
   Carcase = (function(_super) {
+    var controllers, models;
+
     __extends(Carcase, _super);
 
+    models = {};
+
+    controllers = {};
+
     function Carcase() {
-      var childModuleSelector, childModuleSelectors, _i, _len;
-      this.element = document.querySelector(".carcase");
-      this.childModules = [];
-      childModuleSelectors = this._finder(this.element);
-      for (_i = 0, _len = childModuleSelectors.length; _i < _len; _i++) {
-        childModuleSelector = childModuleSelectors[_i];
-        this.childModules.push(new Module(childModuleSelector));
-      }
+      this.modules = [];
     }
+
+    Carcase.prototype.addModel = function(name, model) {
+      return models[name] = model;
+    };
+
+    Carcase.prototype.returnModel = function(name) {
+      return models[name];
+    };
+
+    Carcase.prototype.addController = function(name, model) {
+      return controllers[name] = model;
+    };
+
+    Carcase.prototype.returnController = function(name) {
+      return controllers[name];
+    };
+
+    Carcase.prototype._init = function() {
+      var module, modules, _i, _len, _results;
+      this.element = document.querySelector(".carcase");
+      modules = this._attrs(this.element);
+      _results = [];
+      for (_i = 0, _len = modules.length; _i < _len; _i++) {
+        module = modules[_i];
+        _results.push(this.modules.push(new Module(module, module.attributes.module.value)));
+      }
+      return _results;
+    };
 
     return Carcase;
 
   })(Tool);
 
+  carcase = new Carcase;
+
   Module = (function(_super) {
     __extends(Module, _super);
 
-    function Module(module, parentModule) {
-      var childModuleSelector, childModuleSelectors, _i, _len;
-      this.element = module;
+    function Module(selector, modelName, parentModule) {
+      var childModule, childModules, _i, _len;
+      this.element = selector;
+      this.modelName = modelName;
       this.parentModule = parentModule;
+      this.model = new Model(carcase.returnModel(this.modelName));
       this.childModules = [];
-      childModuleSelectors = this._finder(this.element);
-      for (_i = 0, _len = childModuleSelectors.length; _i < _len; _i++) {
-        childModuleSelector = childModuleSelectors[_i];
-        this.childModules.push(new Module(childModuleSelector, this));
+      childModules = this._attrs(this.element);
+      for (_i = 0, _len = childModules.length; _i < _len; _i++) {
+        childModule = childModules[_i];
+        this.childModules.push(new Module(childModule, childModule.attributes.module.value, this));
       }
     }
 
@@ -85,9 +120,15 @@
 
   })();
 
-  document.addEventListener("DOMContentLoaded", function() {
-    var carcase;
-    return console.log(carcase = new Carcase);
+  carcase.addModel("mainFirst", {
+    name: "Vladislav",
+    lastname: "Tkachenko",
+    collect: ["FirstName", "LastName"]
   });
+
+  carcase.addController("mainFirst", document.addEventListener("DOMContentLoaded", function() {
+    carcase._init();
+    return console.log(carcase);
+  }));
 
 }).call(this);
