@@ -1,52 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Carcase</title>
+	<title>Main</title>
 	<link rel="stylesheet" type="text/css" href="styles.css">
-	<script src="carcase.js"></script>
+	<script src="require.js" data-main="main.js"></script>
 </head>
-<body class="carcase">
+<body>
 
-	<div>
+	<module one>
+	
+		<p event="click.alert">
+			FirstName: ~firstname~
+			LastName: ~lastname~
+		</p>
+	
+	</module>
 
-		<div module="mainFirst">
+	<module two>
 	
-			Module 1-level
-			
-			<div module="mainTwo">
-				
-				Module 2-level
-	
-				<div module="mainThree">
-					
-					Module 3-level
-	
-				</div>
-	
-			</div>
-	
-			<div module="mainTwo">
-				
-				Module 2-level
-	
-			</div>
-	
-		</div>
-	
-	
-		<div module="mainFirst">
-	
-			Module 1-level
+		Module 1-level
 		
-		</div>
-
-		<div module="mainFirst">
-	
-			Module 1-level
-			
-		</div>
-
-	</div>
+	</module>
 
 </body>
 </html>
