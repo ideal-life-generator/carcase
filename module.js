@@ -1,11 +1,30 @@
 (function() {
-  var Model, Module, View;
+  var Model, Module, View, tool;
+
+  tool = {
+    speed: function(model, fn) {
+      var now;
+      now = (new Date).getTime();
+      fn.call(model);
+      return console.debug("The speed of function \"" + model.name + "\": " + ((new Date).getTime() - now) + " ms.");
+    }
+  };
 
   View = (function() {
-    function View(element, model) {
+    function View(name, element, model) {
+      var value;
+      this.name = name;
       this.props = {};
       this.createView(element);
-      this._init(model);
+      for (name in model) {
+        value = model[name];
+        if (!this.props[name]) {
+          continue;
+        }
+        this.props[name].element.innerHTML = this.props[name].element.innerHTML.replace("~" + name + "~", value);
+        this.props[name].lastContent = value;
+      }
+      return;
     }
 
     View.prototype.createView = function(element) {
@@ -34,25 +53,22 @@
 
     View.prototype.update = function(model) {
       var name, value;
-      for (name in model) {
-        value = model[name];
-        if (!this.props[name]) {
-          continue;
+      if (model) {
+        for (name in model) {
+          value = model[name];
+          if (this.props[name] && this.props[name].lastContent !== value) {
+            this.props[name].element.innerHTML = this.props[name].element.innerHTML.replace(this.props[name].lastContent, value);
+            this.props[name].lastContent = value;
+          } else {
+            if (this.props[name]) {
+              console.warn("Do you want to refresh the view but not change the value \"" + value + "\" of the \"" + name + "\".");
+            } else {
+              console.warn("Prop \"" + name + "\" is not defined.");
+            }
+          }
         }
-        this.props[name].element.innerHTML = this.props[name].element.innerHTML.replace(this.props[name].lastContent, value);
-        this.props[name].lastContent = value;
-      }
-    };
-
-    View.prototype._init = function(model) {
-      var name, value;
-      for (name in model) {
-        value = model[name];
-        if (!this.props[name]) {
-          continue;
-        }
-        this.props[name].element.innerHTML = this.props[name].element.innerHTML.replace("~" + name + "~", value);
-        this.props[name].lastContent = value;
+      } else {
+        console.warn("You did not specify which model \"" + this.name + "\" should be updated.");
       }
     };
 
@@ -62,10 +78,10 @@
 
   Model = (function() {
     function Model(model) {
-      var prop, value;
-      for (prop in model) {
-        value = model[prop];
-        this[prop] = value;
+      var name, value;
+      for (name in model) {
+        value = model[name];
+        this[name] = value;
       }
     }
 
@@ -75,9 +91,10 @@
 
   Module = (function() {
     function Module(name, model) {
+      this.name = name;
       this.element = document.querySelector("[module=" + name + "]");
       this.model = new Model(model);
-      this.view = new View(this.element, this.model);
+      this.view = new View(this.name, this.element, this.model);
     }
 
     return Module;
@@ -92,8 +109,10 @@
       point: 1000
     });
     return setInterval(function() {
-      return module.view.update({
-        point: ++module.model.point
+      return tool.speed(module.view, function() {
+        return module.view.update({
+          point: ++module.model.point
+        });
       });
     }, 1000);
   });
