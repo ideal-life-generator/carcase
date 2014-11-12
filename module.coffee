@@ -1,12 +1,11 @@
 tool =
-  speed: (name, model, fn) ->
+  speed: (title, parent, fn) ->
     now = (new Date).getTime()
-    fn.call model
-    console.debug "The speed of function \"#{name}\": #{(new Date).getTime() - now} ms."
+    fn.call parent
+    console.debug "The speed of function \"#{title}\": #{(new Date).getTime() - now} ms."
 
 class View
   constructor: (element, model) ->
-    @[name] = value for name, value of model
     @createView element
 
     for name, value of model when @[name]
@@ -24,22 +23,12 @@ class View
       else @createView child
     return
 
-  update: (model) ->
-    if model
-      for name, value of model
-        if @[name] and @[name].lastContent isnt value
-          @[name].element.innerHTML = @[name].element.innerHTML.replace @[name].lastContent, value
-          @[name].lastContent = value
-        else
-          if @[name] then console.warn "Do you want to refresh the view but not change the value \"#{value}\" of the \"#{name}\"."
-          else console.warn "Prop \"#{name}\" is not defined."
-    else
-      console.warn "You did not specify which model \"#{@name}\" should be updated."
+  update: (newModel) ->
+    for name, value of newModel
+      if @[name] and @[name].lastContent isnt value
+        @[name].element.innerHTML = @[name].element.innerHTML.replace @[name].lastContent, value
+        @[name].lastContent = value
     return
-
-# class Model
-#   constructor: (model) ->
-#     @[name] = value for name, value of model
 
 class Controller
   constructor: (@events, view) ->
@@ -50,15 +39,24 @@ class Controller
       devision = name.indexOf ":"
       selector = name.slice 0, devision
       element = document.querySelector "[#{selector}]"
-      element.addEventListener (name.slice devision + 2), ->
-        event.handler.apply view, (view[prop].lastContent for prop in element.attributes[selector].value.split ",")
+      element.addEventListener (name.slice devision + 2), (e) ->
+        args = (view[prop].lastContent for prop in element.attributes[selector].value.split ",")
+        args.push e, element
+        event.apply view, args
     return
 
+class Model
+  constructor: (model) ->
+    @[name] = value for name, value of model
+
+  getModel: ->
+    @
+
 class Module
-  constructor: (@name, @model, binds) ->
+  constructor: (@name, model, binds) ->
     @element = document.querySelector "[module=#{name}]"
 
-    # @model = new Model model
+    @model = new Model model
     @view = new View @element, @model
     @controller = new Controller binds, @view
 
@@ -68,10 +66,9 @@ document.addEventListener "DOMContentLoaded", ->
     lastName: "Tkachenko"
     point: 1000
   ,
-    "some: click":
-      handler: (firstName, point) ->
-        tool.speed "some: click", @, ->
-          console.log "#{firstName}: #{point}"
+    "rename: click": (firstName, event) -> # the event object and element has been joined in end of arguments: event, element - this arguments added automatically
+        event.stopPropagation()
+        tool.speed "rename", @, ->
           if firstName is "Vladislav" then @update firstName: "Vasuliy"
           else @update firstName: "Vladislav"
 

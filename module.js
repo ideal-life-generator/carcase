@@ -1,22 +1,18 @@
 (function() {
-  var Controller, Module, View, tool;
+  var Controller, Model, Module, View, tool;
 
   tool = {
-    speed: function(name, model, fn) {
+    speed: function(title, parent, fn) {
       var now;
       now = (new Date).getTime();
-      fn.call(model);
-      return console.debug("The speed of function \"" + name + "\": " + ((new Date).getTime() - now) + " ms.");
+      fn.call(parent);
+      return console.debug("The speed of function \"" + title + "\": " + ((new Date).getTime() - now) + " ms.");
     }
   };
 
   View = (function() {
     function View(element, model) {
       var name, value;
-      for (name in model) {
-        value = model[name];
-        this[name] = value;
-      }
       this.createView(element);
       for (name in model) {
         value = model[name];
@@ -53,24 +49,14 @@
       }
     };
 
-    View.prototype.update = function(model) {
+    View.prototype.update = function(newModel) {
       var name, value;
-      if (model) {
-        for (name in model) {
-          value = model[name];
-          if (this[name] && this[name].lastContent !== value) {
-            this[name].element.innerHTML = this[name].element.innerHTML.replace(this[name].lastContent, value);
-            this[name].lastContent = value;
-          } else {
-            if (this[name]) {
-              console.warn("Do you want to refresh the view but not change the value \"" + value + "\" of the \"" + name + "\".");
-            } else {
-              console.warn("Prop \"" + name + "\" is not defined.");
-            }
-          }
+      for (name in newModel) {
+        value = newModel[name];
+        if (this[name] && this[name].lastContent !== value) {
+          this[name].element.innerHTML = this[name].element.innerHTML.replace(this[name].lastContent, value);
+          this[name].lastContent = value;
         }
-      } else {
-        console.warn("You did not specify which model \"" + this.name + "\" should be updated.");
       }
     };
 
@@ -91,9 +77,9 @@
         devision = name.indexOf(":");
         selector = name.slice(0, devision);
         element = document.querySelector("[" + selector + "]");
-        element.addEventListener(name.slice(devision + 2), function() {
-          var prop;
-          return event.handler.apply(view, (function() {
+        element.addEventListener(name.slice(devision + 2), function(e) {
+          var args, prop;
+          args = (function() {
             var _i, _len, _ref, _results;
             _ref = element.attributes[selector].value.split(",");
             _results = [];
@@ -102,7 +88,9 @@
               _results.push(view[prop].lastContent);
             }
             return _results;
-          })());
+          })();
+          args.push(e, element);
+          return event.apply(view, args);
         });
       }
     };
@@ -111,11 +99,28 @@
 
   })();
 
+  Model = (function() {
+    function Model(model) {
+      var name, value;
+      for (name in model) {
+        value = model[name];
+        this[name] = value;
+      }
+    }
+
+    Model.prototype.getModel = function() {
+      return this;
+    };
+
+    return Model;
+
+  })();
+
   Module = (function() {
     function Module(name, model, binds) {
       this.name = name;
-      this.model = model;
       this.element = document.querySelector("[module=" + name + "]");
+      this.model = new Model(model);
       this.view = new View(this.element, this.model);
       this.controller = new Controller(binds, this.view);
     }
@@ -131,21 +136,19 @@
       lastName: "Tkachenko",
       point: 1000
     }, {
-      "some: click": {
-        handler: function(firstName, point) {
-          return tool.speed("some: click", this, function() {
-            console.log("" + firstName + ": " + point);
-            if (firstName === "Vladislav") {
-              return this.update({
-                firstName: "Vasuliy"
-              });
-            } else {
-              return this.update({
-                firstName: "Vladislav"
-              });
-            }
-          });
-        }
+      "rename: click": function(firstName, event) {
+        event.stopPropagation();
+        return tool.speed("rename", this, function() {
+          if (firstName === "Vladislav") {
+            return this.update({
+              firstName: "Vasuliy"
+            });
+          } else {
+            return this.update({
+              firstName: "Vladislav"
+            });
+          }
+        });
       }
     });
     console.log(module);
